@@ -1,17 +1,4 @@
 <?php
-/*
- * Plugin Name: Simple Visits Stats
- * Plugin URI: https://github.com/tu-usuario/simple-visits-stats
- * Description: A simple WordPress plugin to track visits to pages, posts, WooCommerce products, categories, and the shop page, with daily, monthly, and annual statistics.
- * Version: 1.2.0
- * Author: Sant77_ec
- * Author URI: https://github.com/tu-usuario
- * License: GPL-2.0-or-later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Requires at least: 5.0
- * Requires PHP: 7.0
- */
-
 // Registrar visitas a páginas, entradas, productos, página de la tienda y categorías de productos
 function simple_visit_counter() {
     if (is_admin() || is_user_logged_in() || simple_is_bot()) {
@@ -69,9 +56,8 @@ function simple_visit_counter() {
         }
 
         $post_daily_stats[$today]++;
-        // Limpiar datos diarios según el límite configurado
-        $daily_limit = (int) get_option('simple_stats_daily_limit', 30);
-        $cutoff_date = date('Y-m-d', strtotime("-$daily_limit days"));
+        // Limpiar datos diarios de más de 30 días
+        $cutoff_date = date('Y-m-d', strtotime('-30 days'));
         foreach ($post_daily_stats as $date => $count) {
             if ($date < $cutoff_date) {
                 unset($post_daily_stats[$date]);
@@ -96,9 +82,8 @@ function simple_visit_counter() {
         }
 
         $category_daily_stats[$today]++;
-        // Limpiar datos diarios según el límite configurado
-        $daily_limit = (int) get_option('simple_stats_daily_limit', 30);
-        $cutoff_date = date('Y-m-d', strtotime("-$daily_limit days"));
+        // Limpiar datos diarios de más de 30 días
+        $cutoff_date = date('Y-m-d', strtotime('-30 days'));
         foreach ($category_daily_stats as $date => $count) {
             if ($date < $cutoff_date) {
                 unset($category_daily_stats[$date]);
@@ -118,9 +103,8 @@ function simple_visit_counter() {
     } else {
         $daily_stats[$today]['site']++;
     }
-    // Limpiar datos diarios según el límite configurado
-    $daily_limit = (int) get_option('simple_stats_daily_limit', 30);
-    $cutoff_date = date('Y-m-d', strtotime("-$daily_limit days"));
+    // Limpiar datos diarios de más de 30 días
+    $cutoff_date = date('Y-m-d', strtotime('-30 days'));
     foreach ($daily_stats as $date => $stats) {
         if ($date < $cutoff_date) {
             unset($daily_stats[$date]);
@@ -139,9 +123,8 @@ function simple_visit_counter() {
     } else {
         $monthly_stats[$month]['site']++;
     }
-    // Limpiar datos mensuales según el límite configurado
-    $monthly_limit = (int) get_option('simple_stats_monthly_limit', 12);
-    $cutoff_month = date('Y-m', strtotime("-$monthly_limit months"));
+    // Limpiar datos mensuales de más de 12 meses
+    $cutoff_month = date('Y-m', strtotime('-12 months'));
     foreach ($monthly_stats as $m => $stats) {
         if ($m < $cutoff_month) {
             unset($monthly_stats[$m]);
@@ -160,9 +143,8 @@ function simple_visit_counter() {
     } else {
         $annual_stats[$year]['site']++;
     }
-    // Limpiar datos anuales según el límite configurado
-    $annual_limit = (int) get_option('simple_stats_annual_limit', 2);
-    $cutoff_year = date('Y', strtotime("-$annual_limit years"));
+    // Limpiar datos anuales de más de 2 años
+    $cutoff_year = date('Y', strtotime('-2 years'));
     foreach ($annual_stats as $y => $stats) {
         if ($y < $cutoff_year) {
             unset($annual_stats[$y]);
@@ -195,118 +177,8 @@ function simple_stats_menu() {
         'dashicons-chart-bar',
         80
     );
-    add_submenu_page(
-        'simple-stats',
-        'Ajustes de Estadísticas',
-        'Ajustes',
-        'manage_options',
-        'simple-stats-settings',
-        'simple_stats_settings_page'
-    );
 }
 add_action('admin_menu', 'simple_stats_menu');
-
-// Página de ajustes para límites
-function simple_stats_settings_page() {
-    if (isset($_POST['simple_stats_settings_nonce']) && wp_verify_nonce($_POST['simple_stats_settings_nonce'], 'simple_stats_settings')) {
-        $daily_limit = isset($_POST['daily_limit']) ? absint($_POST['daily_limit']) : 30;
-        $monthly_limit = isset($_POST['monthly_limit']) ? absint($_POST['monthly_limit']) : 12;
-        $annual_limit = isset($_POST['annual_limit']) ? absint($_POST['annual_limit']) : 2;
-
-        $daily_limit = max(1, min($daily_limit, 90)); // Límite entre 1 y 90 días
-        $monthly_limit = max(1, min($monthly_limit, 36)); // Límite entre 1 y 36 meses
-        $annual_limit = max(1, min($annual_limit, 5)); // Límite entre 1 y 5 años
-
-        update_option('simple_stats_daily_limit', $daily_limit);
-        update_option('simple_stats_monthly_limit', $monthly_limit);
-        update_option('simple_stats_annual_limit', $annual_limit);
-
-        echo '<div class="updated"><p>Ajustes guardados.</p></div>';
-    }
-
-    $daily_limit = (int) get_option('simple_stats_daily_limit', 30);
-    $monthly_limit = (int) get_option('simple_stats_monthly_limit', 12);
-    $annual_limit = (int) get_option('simple_stats_annual_limit', 2);
-    ?>
-    <div class="wrap">
-        <h1>Ajustes de Estadísticas</h1>
-        <form method="post" action="">
-            <?php wp_nonce_field('simple_stats_settings', 'simple_stats_settings_nonce'); ?>
-            <table class="form-table">
-                <tr>
-                    <th scope="row"><label for="daily_limit">Límite de días</label></th>
-                    <td>
-                        <input type="number" id="daily_limit" name="daily_limit" value="<?php echo esc_attr($daily_limit); ?>" min="1" max="90">
-                        <p class="description">Número de días para almacenar estadísticas diarias (1-90).</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label for="monthly_limit">Límite de meses</label></th>
-                    <td>
-                        <input type="number" id="monthly_limit" name="monthly_limit" value="<?php echo esc_attr($monthly_limit); ?>" min="1" max="36">
-                        <p class="description">Número de meses para almacenar estadísticas mensuales (1-36).</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label for="annual_limit">Límite de años</label></th>
-                    <td>
-                        <input type="number" id="annual_limit" name="annual_limit" value="<?php echo esc_attr($annual_limit); ?>" min="1" max="5">
-                        <p class="description">Número de años para almacenar estadísticas anuales (1-5).</p>
-                    </td>
-                </tr>
-            </table>
-            <p class="submit">
-                <input type="submit" class="button button-primary" value="Guardar cambios">
-            </p>
-        </form>
-    </div>
-    <?php
-}
-
-// Widget en el escritorio
-function simple_stats_dashboard_widget() {
-    wp_add_dashboard_widget(
-        'simple_stats_dashboard_widget',
-        'Resumen de Visitas (Últimos 7 días)',
-        'simple_stats_dashboard_widget_display'
-    );
-}
-add_action('wp_dashboard_setup', 'simple_stats_dashboard_widget');
-
-function simple_stats_dashboard_widget_display() {
-    $start_date = date('Y-m-d', strtotime('-7 days'));
-    $end_date = date('Y-m-d');
-    $cache_key = 'simple_stats_dashboard_' . md5($start_date . $end_date);
-    $cached_data = get_transient($cache_key);
-
-    if ($cached_data !== false) {
-        $total = $cached_data['total'];
-        $site = $cached_data['site'];
-        $products = $cached_data['products'];
-    } else {
-        $daily_stats = get_option('simple_daily_stats', array());
-        $total = 0;
-        $site = 0;
-        $products = 0;
-
-        foreach ($daily_stats as $date => $stats) {
-            if ($date >= $start_date && $date <= $end_date) {
-                $total += $stats['total'];
-                $site += $stats['site'];
-                $products += $stats['products'];
-            }
-        }
-
-        set_transient($cache_key, compact('total', 'site', 'products'), HOUR_IN_SECONDS);
-    }
-
-    ?>
-    <p><strong>Visitas a páginas y entradas:</strong> <?php echo (int) $site; ?></p>
-    <p><strong>Visitas a productos, categorías y tienda:</strong> <?php echo (int) $products; ?></p>
-    <p><strong>Total de visitas:</strong> <?php echo (int) $total; ?></p>
-    <p><a href="<?php echo admin_url('admin.php?page=simple-stats'); ?>" class="button">Ver estadísticas completas</a></p>
-    <?php
-}
 
 // Renderizar la página de estadísticas con filtros
 function simple_stats_page() {
@@ -318,8 +190,6 @@ function simple_stats_page() {
     $end_date = isset($_GET['end_date']) && !empty($_GET['end_date']) ? sanitize_text_field($_GET['end_date']) : $today;
     $start_month = isset($_GET['start_month']) && !empty($_GET['start_month']) ? sanitize_text_field($_GET['start_month']) : $current_month;
     $end_month = isset($_GET['end_month']) && !empty($_GET['end_month']) ? sanitize_text_field($_GET['end_month']) : $current_month;
-    $page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
-    $per_page = 10;
 
     // Validar fechas
     if ($view === 'daily') {
@@ -332,8 +202,7 @@ function simple_stats_page() {
             $start_date = $end_date;
             $end_date = $temp;
         }
-        $daily_limit = (int) get_option('simple_stats_daily_limit', 30);
-        $cutoff_date = date('Y-m-d', strtotime("-$daily_limit days"));
+        $cutoff_date = date('Y-m-d', strtotime('-30 days'));
         if ($start_date < $cutoff_date) {
             $start_date = $cutoff_date;
         }
@@ -347,88 +216,64 @@ function simple_stats_page() {
             $start_month = $end_month;
             $end_month = $temp;
         }
-        $monthly_limit = (int) get_option('simple_stats_monthly_limit', 12);
-        $cutoff_month = date('Y-m', strtotime("-$monthly_limit months"));
+        $cutoff_month = date('Y-m', strtotime('-12 months'));
         if ($start_month < $cutoff_month) {
             $start_month = $cutoff_month;
         }
     }
 
-    // Obtener estadísticas desde caché o base de datos
-    $cache_key = 'simple_stats_' . md5($view . $start_date . $end_date . $start_month . $end_month . $page);
-    $cached_stats = get_transient($cache_key);
-    if ($cached_stats !== false) {
-        $data = $cached_stats;
-    } else {
-        $daily_stats = get_option('simple_daily_stats', array());
-        $monthly_stats = get_option('simple_monthly_stats', array());
-        $annual_stats = get_option('simple_annual_stats', array());
+    // Obtener estadísticas
+    $daily_stats = get_option('simple_daily_stats', array());
+    $monthly_stats = get_option('simple_monthly_stats', array());
+    $annual_stats = get_option('simple_annual_stats', array());
 
-        // Filtrar estadísticas diarias
-        $filtered_daily_stats = array();
-        $total_daily = array('total' => 0, 'site' => 0, 'products' => 0);
-        if ($view === 'daily') {
-            foreach ($daily_stats as $date => $stats) {
-                if ($date >= $start_date && $date <= $end_date) {
-                    $filtered_daily_stats[$date] = $stats;
-                    $total_daily['total'] += $stats['total'];
-                    $total_daily['site'] += $stats['site'];
-                    $total_daily['products'] += $stats['products'];
-                }
+    // Filtrar estadísticas diarias
+    $filtered_daily_stats = array();
+    $total_daily = array('total' => 0, 'site' => 0, 'products' => 0);
+    if ($view === 'daily') {
+        foreach ($daily_stats as $date => $stats) {
+            if ($date >= $start_date && $date <= $end_date) {
+                $filtered_daily_stats[$date] = $stats;
+                $total_daily['total'] += $stats['total'];
+                $total_daily['site'] += $stats['site'];
+                $total_daily['products'] += $stats['products'];
             }
         }
-
-        // Filtrar estadísticas mensuales
-        $filtered_monthly_stats = array();
-        $total_monthly = array('total' => 0, 'site' => 0, 'products' => 0);
-        if ($view === 'monthly') {
-            foreach ($monthly_stats as $month => $stats) {
-                if ($month >= $start_month && $month <= $end_month) {
-                    $filtered_monthly_stats[$month] = $stats;
-                    $total_monthly['total'] += $stats['total'];
-                    $total_monthly['site'] += $stats['site'];
-                    $total_monthly['products'] += $stats['products'];
-                }
-            }
-        }
-
-        // Obtener estadísticas anuales
-        $filtered_annual_stats = $annual_stats;
-        $total_annual = array('total' => 0, 'site' => 0, 'products' => 0);
-        foreach ($annual_stats as $stats) {
-            $total_annual['total'] += $stats['total'];
-            $total_annual['site'] += $stats['site'];
-            $total_annual['products'] += $stats['products'];
-        }
-
-        // Obtener posts y categorías más visitados
-        $top_posts = get_top_visited_posts(array('page', 'post'), $start_date, $end_date);
-        $top_products = get_top_visited_posts('product', $start_date, $end_date);
-        $top_categories = get_top_visited_categories($start_date, $end_date);
-
-        $data = compact(
-            'daily_stats', 'monthly_stats', 'annual_stats',
-            'filtered_daily_stats', 'total_daily',
-            'filtered_monthly_stats', 'total_monthly',
-            'filtered_annual_stats', 'total_annual',
-            'top_posts', 'top_products', 'top_categories'
-        );
-
-        set_transient($cache_key, $data, HOUR_IN_SECONDS);
     }
 
-    extract($data);
+    // Filtrar estadísticas mensuales
+    $filtered_monthly_stats = array();
+    $total_monthly = array('total' => 0, 'site' => 0, 'products' => 0);
+    if ($view === 'monthly') {
+        foreach ($monthly_stats as $month => $stats) {
+            if ($month >= $start_month && $month <= $end_month) {
+                $filtered_monthly_stats[$month] = $stats;
+                $total_monthly['total'] += $stats['total'];
+                $total_monthly['site'] += $stats['site'];
+                $total_monthly['products'] += $stats['products'];
+            }
+        }
+    }
 
-    // Paginación para estadísticas diarias
-    $paged_daily_stats = array_slice($filtered_daily_stats, ($page - 1) * $per_page, $per_page, true);
-    $total_days = count($filtered_daily_stats);
-    $max_pages = ceil($total_days / $per_page);
+    // Obtener estadísticas anuales
+    $filtered_annual_stats = $annual_stats;
+    $total_annual = array('total' => 0, 'site' => 0, 'products' => 0);
+    foreach ($annual_stats as $stats) {
+        $total_annual['total'] += $stats['total'];
+        $total_annual['site'] += $stats['site'];
+        $total_annual['products'] += $stats['products'];
+    }
+
+    // Obtener posts y categorías más visitados
+    $top_posts = get_top_visited_posts(array('page', 'post'), $start_date, $end_date);
+    $top_products = get_top_visited_posts('product', $start_date, $end_date);
+    $top_categories = get_top_visited_categories($start_date, $end_date);
 
     ?>
     <div class="wrap">
         <h1>Estadísticas de Visitas</h1>
 
-        <form method="get" action="<?php echo admin_url('admin.php'); ?>" id="stats-form">
+        <form method="get" action="<?php echo admin_url('admin.php'); ?>">
             <input type="hidden" name="page" value="simple-stats">
             <div style="margin: 20px 0; padding: 10px; background: #fff; border: 1px solid #ccd0d4;">
                 <h2>Filtros de Fecha</h2>
@@ -441,78 +286,29 @@ function simple_stats_page() {
 
                 <div id="daily-fields" style="display: <?php echo $view === 'daily' ? 'inline' : 'none'; ?>;">
                     <label for="start_date" style="margin-left: 10px;">Fecha de inicio:</label>
-                    <input type="date" id="start_date" name="start_date" value="<?php echo esc_attr($start_date); ?>" max="<?php echo $today; ?>" min="<?php echo date('Y-m-d', strtotime('-' . (int) get_option('simple_stats_daily_limit', 30) . ' days')); ?>">
+                    <input type="date" id="start_date" name="start_date" value="<?php echo esc_attr($start_date); ?>" max="<?php echo $today; ?>" min="<?php echo date('Y-m-d', strtotime('-30 days')); ?>">
                     <label for="end_date" style="margin-left: 10px;">Fecha de fin:</label>
                     <input type="date" id="end_date" name="end_date" value="<?php echo esc_attr($end_date); ?>" max="<?php echo $today; ?>">
                 </div>
 
                 <div id="monthly-fields" style="display: <?php echo $view === 'monthly' ? 'inline' : 'none'; ?>;">
                     <label for="start_month" style="margin-left: 10px;">Mes de inicio:</label>
-                    <input type="month" id="start_month" name="start_month" value="<?php echo esc_attr($start_month); ?>" max="<?php echo $current_month; ?>" min="<?php echo date('Y-m', strtotime('-' . (int) get_option('simple_stats_monthly_limit', 12) . ' months')); ?>">
+                    <input type="month" id="start_month" name="start_month" value="<?php echo esc_attr($start_month); ?>" max="<?php echo $current_month; ?>" min="<?php echo date('Y-m', strtotime('-12 months')); ?>">
                     <label for="end_month" style="margin-left: 10px;">Mes de fin:</label>
                     <input type="month" id="end_month" name="end_month" value="<?php echo esc_attr($end_month); ?>" max="<?php echo $current_month; ?>">
                 </div>
 
                 <input type="submit" class="button button-primary" value="Aplicar filtros" style="margin-left: 10px;">
                 <a href="<?php echo admin_url('admin.php?page=simple-stats'); ?>" class="button">Restablecer filtros</a>
-                <input type="submit" name="export_csv" class="button" value="Exportar a CSV" style="margin-left: 10px;">
             </div>
         </form>
 
-        <div id="loading-spinner" style="display: none; text-align: center; margin: 20px 0;">
-            <span style="font-size: 16px;">Cargando...</span>
-        </div>
-
         <script>
-        jQuery(document).ready(function($) {
-            $('#stats-form').on('submit', function() {
-                $('#loading-spinner').show();
-            });
-
-            function toggleDateFields(view) {
-                $('#daily-fields').css('display', view === 'daily' ? 'inline' : 'none');
-                $('#monthly-fields').css('display', view === 'monthly' ? 'inline' : 'none');
-            }
-        });
+        function toggleDateFields(view) {
+            document.getElementById('daily-fields').style.display = view === 'daily' ? 'inline' : 'none';
+            document.getElementById('monthly-fields').style.display = view === 'monthly' ? 'inline' : 'none';
+        }
         </script>
-
-        <style>
-        #loading-spinner {
-            font-weight: bold;
-        }
-        </style>
-
-        <?php
-        // Manejar exportación a CSV
-        if (isset($_GET['export_csv'])) {
-            $filename = 'visits-stats-' . $view . '-' . date('Y-m-d') . '.csv';
-            header('Content-Type: text/csv');
-            header('Content-Disposition: attachment; filename="' . $filename . '"');
-            header('Cache-Control: no-cache, no-store, must-revalidate');
-            header('Pragma: no-cache');
-            header('Expires: 0');
-
-            $output = fopen('php://output', 'w');
-            if ($view === 'daily') {
-                fputcsv($output, ['Fecha', 'Visitas Totales', 'Páginas y Entradas', 'Productos, Categorías y Tienda']);
-                foreach ($filtered_daily_stats as $date => $stats) {
-                    fputcsv($output, [$date, $stats['total'], $stats['site'], $stats['products']]);
-                }
-            } elseif ($view === 'monthly') {
-                fputcsv($output, ['Mes', 'Visitas Totales', 'Páginas y Entradas', 'Productos, Categorías y Tienda']);
-                foreach ($filtered_monthly_stats as $month => $stats) {
-                    fputcsv($output, [date_i18n('F Y', strtotime($month . '-01')), $stats['total'], $stats['site'], $stats['products']]);
-                }
-            } else {
-                fputcsv($output, ['Año', 'Visitas Totales', 'Páginas y Entradas', 'Productos, Categorías y Tienda']);
-                foreach ($filtered_annual_stats as $year => $stats) {
-                    fputcsv($output, [$year, $stats['total'], $stats['site'], $stats['products']]);
-                }
-            }
-            fclose($output);
-            exit;
-        }
-        ?>
 
         <?php if ($view === 'daily'): ?>
             <h2>Resumen del período (<?php echo esc_html($start_date); ?> al <?php echo esc_html($end_date); ?>)</h2>
@@ -602,8 +398,8 @@ function simple_stats_page() {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($paged_daily_stats)): ?>
-                        <?php foreach ($paged_daily_stats as $date => $stats): ?>
+                    <?php if (!empty($filtered_daily_stats)): ?>
+                        <?php foreach ($filtered_daily_stats as $date => $stats): ?>
                             <tr>
                                 <td><?php echo esc_html($date); ?></td>
                                 <td><?php echo (int) $stats['total']; ?></td>
@@ -616,28 +412,6 @@ function simple_stats_page() {
                     <?php endif; ?>
                 </tbody>
             </table>
-
-            <?php if ($total_days > $per_page): ?>
-                <div class="tablenav">
-                    <div class="tablenav-pages">
-                        <?php
-                        $pagination_args = array(
-                            'base' => add_query_arg('paged', '%#%'),
-                            'format' => '',
-                            'total' => $max_pages,
-                            'current' => $page,
-                            'show_all' => false,
-                            'end_size' => 1,
-                            'mid_size' => 2,
-                            'prev_text' => '« Anterior',
-                            'next_text' => 'Siguiente »',
-                            'type' => 'plain',
-                        );
-                        echo paginate_links($pagination_args);
-                        ?>
-                    </div>
-                </div>
-            <?php endif; ?>
 
         <?php elseif ($view === 'monthly'): ?>
             <h2>Resumen del período (<?php echo esc_html(date_i18n('F Y', strtotime($start_month . '-01'))); ?> al <?php echo esc_html(date_i18n('F Y', strtotime($end_month . '-01'))); ?>)</h2>
